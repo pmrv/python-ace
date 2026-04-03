@@ -212,6 +212,10 @@ PyACE ASE calculator
         write(fname, atoms, format="cfg")
         self.current_extrapolation_structure_index += 1
 
+    def __reduce__(self):
+        di = self.todict()
+        di.pop('basis_set', None)
+        return (type(self), (self.basis.to_BBasisConfiguration(),), self.todict())
 
 class PyACEEnsembleCalculator(Calculator):
     """
