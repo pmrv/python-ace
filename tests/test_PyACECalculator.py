@@ -1,3 +1,5 @@
+import pickle
+
 import numpy as np
 import pytest
 
@@ -250,3 +252,45 @@ def test_ZBL_analytical_derivative():
 
     at = Atoms("H2", positions=[[0, 0, 0], [0, 0, 1.5]])  # ZBL
     check(at, "ZBL forces are inconsistent")
+
+
+def check_pickle_roundtrip(calc):
+    a = create_dimer(2.0)
+    a.set_calculator(calc)
+    e1 = a.get_potential_energy()
+    f1 = a.get_forces()
+
+    calc2 = pickle.loads(pickle.dumps(calc))
+
+    b = create_dimer(2.0)
+    b.set_calculator(calc2)
+    e2 = b.get_potential_energy()
+    f2 = b.get_forces()
+
+    assert np.allclose(e1, e2)
+    assert np.allclose(f1, f2)
+    return calc2
+
+
+def test_pickle_bbasis_calculator():
+    calc = PyACECalculator(basis_set="tests/Al.pbe.13.2.yaml")
+    calc2 = check_pickle_roundtrip(calc)
+    assert isinstance(calc2.basis, ACEBBasisSet)
+    assert isinstance(calc2.evaluator, ACEBEvaluator)
+
+
+def test_pickle_ctilde_calculator():
+    calc = PyACECalculator(basis_set="tests/Al.pbe.rhocore.ace")
+    calc2 = check_pickle_roundtrip(calc)
+    assert isinstance(calc2.basis, ACECTildeBasisSet)
+    assert isinstance(calc2.evaluator, ACECTildeEvaluator)
+
+
+def test_pickle_ctilde_recursive_calculator():
+    from pyace.evaluator import ACERecursiveEvaluator
+
+    calc = PyACECalculator(basis_set="tests/Al.pbe.rhocore.ace",
+                           recursive_evaluator=True, recursive=True)
+    calc2 = check_pickle_roundtrip(calc)
+    assert isinstance(calc2.basis, ACECTildeBasisSet)
+    assert isinstance(calc2.evaluator, ACERecursiveEvaluator)
