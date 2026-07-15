@@ -192,7 +192,9 @@ setup(
                                           build_ext=CMakeBuild)),
     zip_safe=False,
     url='https://github.com/ICAMS/python-ace',
-    install_requires=['numpy<=1.26.4',
+    # numpy 2.4 removes np.trapz and makes np.float64(array) return an array
+    # instead of a scalar, which breaks PyACECalculator energy output
+    install_requires=['numpy<2.4',
                       'ase',
                       'pandas>=2,<4',
                       'ruamel.yaml',
