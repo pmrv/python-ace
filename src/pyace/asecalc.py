@@ -164,8 +164,6 @@ PyACE ASE calculator
         self.energies = np.array(self.ace.energies)
 
         self.results = {
-            # float() instead of np.float64(): since numpy 2.4 the scalar
-            # constructor no longer collapses 1-element arrays to scalars
             'energy': float(self.energy),
             'free_energy': float(self.energy),
             'forces': self.forces.astype(np.float64),
@@ -306,10 +304,6 @@ PyACE ASE ensemble calculator
         self.forces_dev = np.max(np.linalg.norm(forces_lst - self.forces, axis=2), axis=0)
 
         self.results = {
-            # scalars go through float() instead of np.float64(): since numpy
-            # 2.4 the scalar constructor no longer collapses 1-element arrays
-            # to scalars, and per-atom arrays stay arrays on every version
-            # with astype()
             # mean
             'energy': float(self.energy),
             'free_energy': float(self.energy),
