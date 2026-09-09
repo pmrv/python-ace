@@ -77,7 +77,16 @@ python setup.py install
 The `pyace` (aka `python-ace`) package is located in [this repository](https://github.com/ICAMS/python-ace).
 It contains the `pacemaker` tools and other Python wrappers and utilities.
 
-To install `pyace`:
+Prebuilt binary wheels (manylinux_2_28, x86_64, CPython 3.9-3.13) are attached to every
+[GitHub release](https://github.com/pmrv/python-ace/releases). If one matches your platform,
+you can skip compiling the C++ extensions:
+```
+pip install https://github.com/pmrv/python-ace/releases/download/<tag>/<wheel-file>.whl
+```
+Wheels for untagged commits can be built on demand with the "Build wheels" workflow under
+the repository's Actions tab and downloaded from the workflow run.
+
+To install `pyace` from source:
 
 * Download `pyace` from [this repository](https://github.com/ICAMS/python-ace). Clone with
 ```

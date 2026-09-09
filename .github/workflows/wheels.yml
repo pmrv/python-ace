@@ -1,0 +1,85 @@
+# Build portable (manylinux_2_28, x86_64) binary wheels of pyace so that
+# deployments can `pip install` them instead of compiling the C++ extensions
+# on every machine.
+#
+# Runs on version tags and on demand. Wheels are always attached to the
+# workflow run as artifacts; on a tag they are also attached to a GitHub
+# Release for that tag.
+
+name: Build wheels
+
+on:
+  push:
+    tags:
+      - "[0-9]+.[0-9]+.[0-9]+*"
+  pull_request:
+    paths:
+      - ".github/workflows/wheels.yml"
+  workflow_dispatch:
+
+jobs:
+  build_wheels:
+    name: Wheel ${{ matrix.python }} (manylinux_2_28 x86_64)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["cp39", "cp310", "cp311", "cp312", "cp313"]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # versioneer derives the version from `git describe`, which needs
+          # the full history and the tags.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Build wheel
+        uses: pypa/cibuildwheel@v2.23.3
+        env:
+          CIBW_BUILD: ${{ matrix.python }}-manylinux_x86_64
+          CIBW_ARCHS_LINUX: x86_64
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_BUILD: pip install cmake
+          # Smoke test: every compiled module must import from the repaired
+          # wheel, outside the source tree.
+          CIBW_TEST_COMMAND: >-
+            python -c "import pyace, pyace.sharmonics, pyace.coupling, pyace.basis, pyace.evaluator, pyace.catomicenvironment, pyace.calculator; print(pyace.__version__)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.python }}
+          path: wheelhouse/*.whl
+
+  build_sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pipx run build --sdist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  release:
+    name: Attach to GitHub Release
+    needs: [build_wheels, build_sdist]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
